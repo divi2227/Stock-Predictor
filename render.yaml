@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: stock-app
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: MONGO_URI
+        value: mongodb://localhost:27017/
+

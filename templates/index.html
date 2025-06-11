@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Stock Predictor</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Stock Prediction</h1>
+        <input type="text" id="tickerInput" placeholder="Enter ticker (e.g. AAPL)">
+        <button onclick="fetchStock()">Get Data</button>
+        
+        <div id="resultContainer">
+            <h2 id="stockTitle"></h2>
+            <div class="price-box">
+                <span>Current: $<span id="currentPrice">-</span></span>
+                <span>Predicted: $<span id="predictedPrice">-</span></span>
+            </div>
+            <canvas id="stockChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let stockChart;
+
+        async function fetchStock() {
+            const ticker = document.getElementById('tickerInput').value;
+            if (!ticker) return;
+            
+            try {
+                const response = await fetch(`/api/stocks?ticker=${ticker}`);
+                const data = await response.json();
+                
+                // Update UI
+                document.getElementById('stockTitle').textContent = `${data.ticker} Analysis`;
+                document.getElementById('currentPrice').textContent = data.current_price.toFixed(2);
+                document.getElementById('predictedPrice').textContent = data.predicted.toFixed(2);
+                
+                // Render Chart
+                renderChart(data.history);
+            } catch (error) {
+                console.error("Error:", error);
+            }
+        }
+
+        function renderChart(history) {
+            const ctx = document.getElementById('stockChart').getContext('2d');
+            const dates = history.map(item => item.date);
+            const prices = history.map(item => item.close);
+            
+            if (stockChart) stockChart.destroy();
+            
+            stockChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dates,
+                    datasets: [{
+                        label: 'Closing Price',
+                        data: prices,
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                }
+            });
+        }
+    </script>
+</body>
+</html>
