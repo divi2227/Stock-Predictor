@@ -11,7 +11,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 load_dotenv()  # 👈 this loads environment variables from .env
 
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 app = Flask(__name__)
@@ -173,6 +173,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 @app.route("/api/openai-recommendation", methods=["POST"])
 def openai_recommendation():
     try:
+        openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         user_prompt = request.json.get("prompt", "")
         from mongo_utils import fetch_all_docs
         factors = fetch_all_docs("stock_factors")
