@@ -1,69 +1,344 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Stock Predictor</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>📈 Stock Predictor</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f9;
+      color: #333;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+      color: #222;
+    }
+    input, select {
+      padding: 10px;
+      font-size: 16px;
+      margin: 5px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .price-box {
+      display: flex;
+      justify-content: space-around;
+      font-size: 18px;
+      margin-top: 10px;
+      background: #f9f9f9;
+      padding: 10px;
+      border-radius: 8px;
+    }
+    .tables-section {
+      margin-top: 40px;
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    table {
+      border-collapse: collapse;
+      min-width: 400px;
+      background: #fafafa;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 12px 15px;
+      text-align: center;
+    }
+    th {
+      background: #007bff;
+      color: #fff;
+      font-size: 16px;
+    }
+    tr:nth-child(even) {
+      background: #f2f2f2;
+    }
+    tr:hover {
+      background: #e6f0ff;
+    }
+    #stockChart {
+      margin-top: 30px;
+      max-height: 400px;
+    }
+    h2 {
+      margin-bottom: 15px;
+    }
+  </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Stock Prediction</h1>
-        <input type="text" id="tickerInput" placeholder="Enter ticker (e.g. AAPL)">
-        <button onclick="fetchStock()">Get Data</button>
-        
-        <div id="resultContainer">
-            <h2 id="stockTitle"></h2>
-            <div class="price-box">
-                <span>Current: $<span id="currentPrice">-</span></span>
-                <span>Predicted: $<span id="predictedPrice">-</span></span>
-            </div>
-            <canvas id="stockChart"></canvas>
-        </div>
+  <div class="container">
+    <h1>📊 Stock Prediction Dashboard</h1>
+    <div style="text-align:center; margin:20px 0;">
+      <input type="text" id="tickerInput" placeholder="Enter ticker (e.g. AAPL)">
+      <select id="marketSelect">
+        <option value="US">🇺🇸 US Market</option>
+        <option value="IN">🇮🇳 India Market</option>
+        <option value="EU">🇪🇺 Europe Market</option>
+        <option value="HK">🇭🇰 Hong Kong Market</option>
+        <option value="JP">🇯🇵 Japan Market</option>
+      </select>
+      <select id="periodSelect">
+        <option value="5d">5 Days</option>
+        <option value="1mo" selected>1 Month</option>
+        <option value="3mo">3 Months</option>
+        <option value="6mo">6 Months</option>
+        <option value="1y">1 Year</option>
+        <option value="5y">5 Years</option>
+        <option value="max">Max</option>
+      </select>
+      <select id="intervalSelect">
+        <option value="1d" selected>Daily</option>
+        <option value="1wk">Weekly</option>
+        <option value="1mo">Monthly</option>
+      </select>
+      <button onclick="fetchStock()">Get Data</button>
     </div>
 
-    <script>
-        let stockChart;
+    <div id="resultContainer">
+      <h2 id="stockTitle"></h2>
+      <div class="price-box">
+        <span>Current: $<span id="currentPrice">-</span></span>
+        <span>Predicted: $<span id="predictedPrice">-</span></span>
+      </div>
+      <canvas id="stockChart"></canvas>
+    </div>
 
-        async function fetchStock() {
-            const ticker = document.getElementById('tickerInput').value;
-            if (!ticker) return;
-            
-            try {
-                const response = await fetch(`/api/stocks?ticker=${ticker}`);
-                const data = await response.json();
-                
-                // Update UI
-                document.getElementById('stockTitle').textContent = `${data.ticker} Analysis`;
-                document.getElementById('currentPrice').textContent = data.current_price.toFixed(2);
-                document.getElementById('predictedPrice').textContent = data.predicted.toFixed(2);
-                
-                // Render Chart
-                renderChart(data.history);
-            } catch (error) {
-                console.error("Error:", error);
+    <div class="tables-section">
+      <div>
+        <h2>🔥 Top 5 Gainers</h2>
+        <table id="gainersTable">
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>Price</th>
+              <th>Change %</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div>
+        <h2>📉 Top 5 Losers</h2>
+        <table id="losersTable">
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>Price</th>
+              <th>Change %</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tables-section" style="margin-top:50px;">
+      <div style="flex:1;">
+        <h2>💡 Top 5 Investments (Based on Factors)</h2>
+        <table id="investmentsTable">
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th>ROI %</th>
+              <th>P/E</th>
+              <th>Profit Margin</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+        <!-- After the Top Investments section -->
+    <div class="tables-section" style="margin-top:50px; flex-direction:column; align-items:center;">
+      <h2>🤖 AI Stock Advisor</h2>
+      <div style="margin-bottom:20px;">
+        <input type="text" id="aiPrompt" placeholder="Ask AI (e.g., Best stock to invest?)"
+               style="padding:10px; font-size:16px; width:60%; max-width:500px; border-radius:6px; border:1px solid #ccc;">
+        <button onclick="getAIRecommendation()" style="padding:10px 20px; font-size:16px; background:#28a745; color:#fff; border:none; border-radius:6px; cursor:pointer;">
+          Ask AI
+        </button>
+      </div>
+      <div id="aiResult" style="display:none; background:#f9f9f9; padding:15px; border-radius:8px; max-width:600px;">
+        <h3>💡 AI Recommendation:</h3>
+        <p id="aiAnswer" style="font-size:18px; color:#333;"></p>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let stockChart;
+
+    async function fetchStock() {
+      const ticker = document.getElementById('tickerInput').value.trim();
+      const market = document.getElementById('marketSelect').value;
+      const period = document.getElementById('periodSelect').value;
+      const interval = document.getElementById('intervalSelect').value;
+      if (!ticker) return alert("Please enter a ticker symbol!");
+
+      try {
+        const response = await fetch(`/api/stocks?ticker=${ticker}&market=${market}&period=${period}&interval=${interval}`);
+        const data = await response.json();
+
+        if (data.error) {
+          alert(`Error: ${data.error}`);
+          return;
+        }
+
+        document.getElementById('stockTitle').textContent = `${data.ticker} (${market}) Analysis`;
+        document.getElementById('currentPrice').textContent = data.current_price.toFixed(2);
+        document.getElementById('predictedPrice').textContent = data.predicted.toFixed(2);
+        renderChart(data.history);
+
+        // Fetch Top Investments
+        fetchInvestments(period, interval, market);
+
+      } catch (error) {
+        console.error("Error:", error);
+        alert("Something went wrong.");
+      }
+    }
+
+    function renderChart(history) {
+      const ctx = document.getElementById('stockChart').getContext('2d');
+      const dates = history.map(item => item.date);
+      const prices = history.map(item => item.close);
+
+      if (stockChart) stockChart.destroy();
+      stockChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [{
+            label: 'Closing Price',
+            data: prices,
+            borderColor: '#36a2eb',
+            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+            fill: true,
+            tension: 0.3
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: context => `$${context.parsed.y.toFixed(2)}`
+              }
             }
+          },
+          scales: {
+            x: { ticks: { color: '#444' } },
+            y: { ticks: { color: '#444' } }
+          }
         }
+      });
+    }
 
-        function renderChart(history) {
-            const ctx = document.getElementById('stockChart').getContext('2d');
-            const dates = history.map(item => item.date);
-            const prices = history.map(item => item.close);
-            
-            if (stockChart) stockChart.destroy();
-            
-            stockChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: dates,
-                    datasets: [{
-                        label: 'Closing Price',
-                        data: prices,
-                        borderColor: 'rgb(75, 192, 192)',
-                        tension: 0.1
-                    }]
-                }
-            });
-        }
-    </script>
+    async function fetchGainers() {
+      const data = await (await fetch('/api/top-gainers')).json();
+      populateTable('gainersTable', data, ['Symbol','Price','% Change']);
+    }
+
+    async function fetchLosers() {
+      const data = await (await fetch('/api/top-losers')).json();
+      populateTable('losersTable', data, ['Symbol','Price','% Change']);
+    }
+
+    async function fetchInvestments(period, interval, market) {
+      const data = await (await fetch(`/api/top-investments?period=${period}&interval=${interval}&market=${market}`)).json();
+      populateInvestmentsTable('investmentsTable', data);
+    }
+
+    function populateTable(tableId, data, keys) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${row[keys[0]] || '-'}</td>
+            <td>$${row[keys[1]] || '-'}</td>
+            <td>${row[keys[2]] || '-'}</td>
+          </tr>`;
+      });
+    }
+
+    async function getAIRecommendation() {
+  const prompt = document.getElementById('aiPrompt').value.trim();
+  if (!prompt) {
+    alert("Please enter a question for AI.");
+    return;
+  }
+  try {
+    const response = await fetch('/api/openai-recommendation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt: prompt })
+    });
+    const data = await response.json();
+    const aiResult = document.getElementById('aiResult');
+    const aiAnswer = document.getElementById('aiAnswer');
+    if (data.error) {
+      aiAnswer.textContent = "⚠️ " + data.error;
+    } else {
+      aiAnswer.textContent = data.recommendation;
+    }
+    aiResult.style.display = 'block';
+  } catch (err) {
+    console.error(err);
+    alert("Error fetching AI recommendation.");
+  }
+}
+
+    function populateInvestmentsTable(tableId, data) {
+      const tbody = document.querySelector(`#${tableId} tbody`);
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        tbody.innerHTML += `
+          <tr>
+            <td>${row.symbol}</td>
+            <td>${row.roi != null ? row.roi + '%' : '-'}</td>
+            <td>${row.pe_ratio != null ? row.pe_ratio : '-'}</td>
+            <td>${row.profit_margin != null ? (row.profit_margin * 100).toFixed(2) + '%' : '-'}</td>
+            <td>${row.score}</td>
+          </tr>`;
+      });
+    }
+
+    window.onload = () => {
+      fetchGainers();
+      fetchLosers();
+    };
+  </script>
 </body>
 </html>
